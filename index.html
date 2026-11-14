@@ -244,5 +244,16 @@ preset=JSON.parse(localStorage.getItem("volei_preset")||"[]");
 presetTeam=Number(localStorage.getItem("volei_team")||0);
 }catch(e){preset=[];presetTeam=0;}
 </script>
+  
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js")
+      .then(reg => console.log("App preparado:", reg.scope))
+      .catch(err => console.error("Erro:", err));
+  });
+}
+</script>
+  
 </body>
 </html>
