@@ -1,0 +1,13 @@
+
+{
+  "name": "Sorteador de Vôlei",
+  "short_name": "Sorteador",
+  "description": "Sorteador de times de vôlei",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#080d18",
+  "theme_color": "#080d18",
+  "icons": []
+}
