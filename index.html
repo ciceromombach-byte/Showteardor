@@ -220,17 +220,25 @@ alert("Senha alterada.");
 }else if(p)alert("Use pelo menos 4 caracteres.");
 }
 function closeAdmin(){$("admin").classList.add("hidden");}
-$("header").addEventListener("touchstart",()=>{
-holdTimer=setTimeout(openAdmin,3000);
-});
-["touchend","touchmove","contextmenu"].forEach(ev=>
-$("header").addEventListener(ev,()=>clearTimeout(holdTimer))
-);
-$("header").addEventListener("mousedown",()=>{
-holdTimer=setTimeout(openAdmin,3000);
-});
-$("header").addEventListener("mouseup",()=>clearTimeout(holdTimer));
 
+let secretTaps=0;
+let secretTimer;
+
+$("header").addEventListener("click",()=>{
+  secretTaps++;
+  clearTimeout(secretTimer);
+
+  if(secretTaps>=5){
+    secretTaps=0;
+    openAdmin();
+    return;
+  }
+
+  secretTimer=setTimeout(()=>{
+    secretTaps=0;
+  },2500);
+});
+  
 try{
 preset=JSON.parse(localStorage.getItem("volei_preset")||"[]");
 presetTeam=Number(localStorage.getItem("volei_team")||0);
