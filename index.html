@@ -1,0 +1,240 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#080d18">
+<title>Sorteador de Vôlei</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#080d18;color:#fff;font-family:Arial,sans-serif;padding:20px}
+header{text-align:center;padding:22px 0}
+h1{font-size:29px;margin:0}
+header p{color:#9ca9bd}
+.card{background:#121c2d;border:1px solid #29374e;border-radius:15px;padding:17px;margin-bottom:17px}
+h2{font-size:19px;margin:0 0 14px}
+input,select{width:100%;padding:13px;background:#0a1322;color:white;border:1px solid #34435b;border-radius:9px;font-size:16px}
+.players{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+button{border:0;border-radius:10px;padding:14px;font-size:16px;font-weight:bold;cursor:pointer}
+.primary{background:#1685ed;color:white;width:100%}
+.secondary{background:#29374e;color:white;width:100%;margin-top:9px}
+.danger{background:#8d2936;color:white;width:100%;margin-top:9px}
+.team{background:#17263c;border-radius:12px;padding:13px;margin:10px 0}
+.team h3{margin:0 0 10px;color:#64b5ff}
+.player{padding:9px;background:#253650;border-radius:7px;margin:6px 0}
+.hidden{display:none!important}
+#result{text-align:center}
+#reveal{font-size:27px;font-weight:bold;min-height:65px;padding:20px 5px}
+.note{font-size:12px;color:#93a4bb;text-align:center}
+#admin{border:1px dashed #60718a}
+</style>
+</head>
+<body>
+
+<header id="header">
+<h1>🏐 SORTEADOR DE VÔLEI</h1>
+<p>12 jogadores • 4 times • 3 jogadores por time</p>
+</header>
+
+<section class="card">
+<h2>👥 Jogadores</h2>
+<div class="players" id="players"></div>
+</section>
+
+<section class="card">
+<h2>🎲 Sorteio</h2>
+<button class="primary" onclick="draw()">SORTEAR TIMES</button>
+<button class="secondary" onclick="showNext()">REVELAR PRÓXIMO JOGADOR</button>
+<button class="danger" onclick="resetDraw()">NOVO SORTEIO</button>
+<p class="note">O sorteio será feito com 12 jogadores e 4 equipes.</p>
+</section>
+
+<section id="presentation" class="card hidden">
+<h2>🎉 Apresentação dos times</h2>
+<div id="reveal">Prepare-se!</div>
+<p id="counter" class="note"></p>
+</section>
+
+<section id="result" class="card hidden">
+<h2>🏆 Times sorteados</h2>
+<div id="teams"></div>
+</section>
+
+<section class="card">
+<h2>⚙️ Configurações</h2>
+<p class="note">A configuração especial fica oculta. Pressione o título por 3 segundos para acessar.</p>
+</section>
+
+<section id="admin" class="card hidden">
+<h2>🔐 Configuração especial</h2>
+<p class="note">Escolha o time que terá jogadores previamente definidos. Essa escolha não será mostrada durante o sorteio.</p>
+<label>Senha de acesso</label>
+<input id="pin" type="password" placeholder="Senha">
+<button class="secondary" onclick="unlock()">ACESSAR</button>
+<div id="settings" class="hidden">
+<label>Time pré-definido</label>
+<select id="fixedTeam">
+<option value="0">Time 1</option>
+<option value="1">Time 2</option>
+<option value="2">Time 3</option>
+<option value="3">Time 4</option>
+</select>
+<p>Escolha exatamente 3 jogadores:</p>
+<div id="fixedPlayers"></div>
+<button class="primary" onclick="savePreset()">SALVAR CONFIGURAÇÃO</button>
+<button class="secondary" onclick="changePin()">ALTERAR SENHA</button>
+<button class="danger" onclick="closeAdmin()">FECHAR</button>
+</div>
+</section>
+
+<script>
+const $=id=>document.getElementById(id);
+let teams=[],order=[],position=0,preset=[],presetTeam=0;
+let password=localStorage.getItem("volei_pin")||"2468";
+let holdTimer;
+
+for(let i=0;i<12;i++){
+let input=document.createElement("input");
+input.placeholder="Jogador "+(i+1);
+input.value="Jogador "+(i+1);
+input.id="p"+i;
+$("players").appendChild(input);
+}
+
+function names(){
+return Array.from({length:12},(_,i)=>$("p"+i).value.trim()||"Jogador "+(i+1));
+}
+
+function shuffle(arr){
+let a=[...arr];
+for(let i=a.length-1;i>0;i--){
+let j=Math.floor(Math.random()*(i+1));
+[a[i],a[j]]=[a[j],a[i]];
+}
+return a;
+}
+
+function draw(){
+let all=names();
+if(new Set(all).size!==12){
+alert("Use nomes diferentes para os 12 jogadores.");
+return;
+}
+let fixed=preset.map(i=>all[i]);
+let remaining=shuffle(all.filter((_,i)=>!preset.includes(i)));
+teams=Array.from({length:4},()=>[]);
+if(preset.length===3)teams[presetTeam]=fixed;
+let index=0;
+for(let t=0;t<4;t++){
+if(t===presetTeam&&preset.length===3)continue;
+teams[t]=remaining.slice(index,index+3);
+index+=3;
+}
+order=shuffle(teams.flat());
+position=0;
+$("result").classList.remove("hidden");
+$("presentation").classList.remove("hidden");
+renderTeams();
+$("reveal").textContent="Times definidos!";
+$("counter").textContent="Toque em revelar para apresentar os jogadores.";
+}
+
+function renderTeams(){
+$("teams").innerHTML="";
+teams.forEach((team,i)=>{
+let box=document.createElement("div");
+box.className="team";
+box.innerHTML="<h3>TIME "+(i+1)+"</h3>";
+team.forEach(name=>{
+let p=document.createElement("div");
+p.className="player";
+p.textContent=name;
+box.appendChild(p);
+});
+$("teams").appendChild(box);
+});
+}
+
+function showNext(){
+if(!order.length){alert("Faça o sorteio primeiro.");return;}
+if(position>=order.length){
+$("reveal").textContent="🏆 Todos os jogadores apresentados!";
+$("counter").textContent="12 de 12 jogadores";
+return;
+}
+$("reveal").textContent=order[position];
+$("counter").textContent=(position+1)+" de 12 jogadores";
+position++;
+}
+
+function resetDraw(){
+teams=[];order=[];position=0;
+$("result").classList.add("hidden");
+$("presentation").classList.add("hidden");
+$("reveal").textContent="Prepare-se!";
+}
+
+function openAdmin(){
+$("admin").classList.remove("hidden");
+$("settings").classList.add("hidden");
+$("pin").value="";
+}
+function unlock(){
+if($("pin").value!==password){alert("Senha incorreta.");return;}
+$("settings").classList.remove("hidden");
+renderFixed();
+}
+function renderFixed(){
+$("fixedPlayers").innerHTML="";
+names().forEach((name,i)=>{
+let label=document.createElement("label");
+label.style.display="block";
+label.style.margin="10px 0";
+let cb=document.createElement("input");
+cb.type="checkbox";
+cb.value=i;
+cb.checked=preset.includes(i);
+cb.style.width="auto";
+label.append(cb,document.createTextNode(" "+name));
+$("fixedPlayers").appendChild(label);
+});
+$("fixedTeam").value=presetTeam;
+}
+function savePreset(){
+let selected=[...$("fixedPlayers").querySelectorAll("input:checked")].map(x=>Number(x.value));
+if(selected.length!==3){alert("Selecione exatamente 3 jogadores.");return;}
+preset=selected;
+presetTeam=Number($("fixedTeam").value);
+localStorage.setItem("volei_preset",JSON.stringify(preset));
+localStorage.setItem("volei_team",presetTeam);
+alert("Configuração salva.");
+closeAdmin();
+}
+function changePin(){
+let p=prompt("Digite a nova senha:");
+if(p&&p.length>=4){
+password=p;
+localStorage.setItem("volei_pin",p);
+alert("Senha alterada.");
+}else if(p)alert("Use pelo menos 4 caracteres.");
+}
+function closeAdmin(){$("admin").classList.add("hidden");}
+$("header").addEventListener("touchstart",()=>{
+holdTimer=setTimeout(openAdmin,3000);
+});
+["touchend","touchmove","contextmenu"].forEach(ev=>
+$("header").addEventListener(ev,()=>clearTimeout(holdTimer))
+);
+$("header").addEventListener("mousedown",()=>{
+holdTimer=setTimeout(openAdmin,3000);
+});
+$("header").addEventListener("mouseup",()=>clearTimeout(holdTimer));
+
+try{
+preset=JSON.parse(localStorage.getItem("volei_preset")||"[]");
+presetTeam=Number(localStorage.getItem("volei_team")||0);
+}catch(e){preset=[];presetTeam=0;}
+</script>
+</body>
+</html>
